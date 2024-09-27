@@ -1,3 +1,3 @@
 The result of the program.
 
-![Cube Gif](https://drive.google.com/file/d/1ZqN33Mvhf6Irs4-zDGTJx8hkfUyedp4V/view?usp=drive_link)
+![Cube](https://github.com/user-attachments/assets/5e724c35-33db-4c1d-91ce-60fd278a1120)
