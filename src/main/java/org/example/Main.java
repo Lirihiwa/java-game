@@ -7,6 +7,8 @@ import org.lwjgl.opengl.*;
 import org.lwjgl.system.*;
 
 import java.nio.*;
+import java.util.ArrayList;
+import java.util.List;
 
 import static org.lwjgl.glfw.Callbacks.*;
 import static org.lwjgl.glfw.GLFW.*;
@@ -18,9 +20,11 @@ public class Main {
 
     // The window handle
     private long window;
-    private float posX = 0.0f, posY = 0.0f, posZ = -5.0f;
-    private float angle = 0.0f;
 
+    private List<Cube> cubes = new ArrayList<Cube>();
+
+    private Cube currentCube;
+    private boolean rotating = false;
 
     public void run() {
         System.out.println("Hello LWJGL " + Version.getVersion() + "!");
@@ -38,18 +42,15 @@ public class Main {
     }
 
     private void init() {
-        // Setup an error callback. The default implementation
-        // will print the error message in System.err.
+
         GLFWErrorCallback.createPrint(System.err).set();
 
-        // Initialize GLFW. Most GLFW functions will not work before doing this.
         if ( !glfwInit() )
             throw new IllegalStateException("Unable to initialize GLFW");
 
-        // Configure GLFW
-        glfwDefaultWindowHints(); // optional, the current window hints are already the default
-        glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE); // the window will stay hidden after creation
-        glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE); // the window will be resizable
+        glfwDefaultWindowHints();
+        glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
+        glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
 
         window = glfwCreateWindow(1920, 1080, "Game", NULL, NULL);
         if ( window == NULL )
@@ -58,18 +59,24 @@ public class Main {
         glfwSetKeyCallback(window, (window, key, scancode, action, mods) -> {
             if(action == GLFW_PRESS || action == GLFW_REPEAT){
                 switch (key) {
-                    case GLFW_KEY_W -> posZ += 0.05f;
-                    case GLFW_KEY_S -> posZ -= 0.05f;
-                    case GLFW_KEY_D -> posX += 0.05f;
-                    case GLFW_KEY_A -> posX -= 0.05f;
-
-                    case GLFW_KEY_SPACE -> posY -= 0.05f;
-                    case GLFW_KEY_LEFT_SHIFT -> posY += 0.05f;
+                    case GLFW_KEY_W -> currentCube.z += 0.05f;
+                    case GLFW_KEY_S -> currentCube.z -= 0.05f;
+                    case GLFW_KEY_D -> currentCube.x += 0.05f;
+                    case GLFW_KEY_A -> currentCube.x -= 0.05f;
+                    case GLFW_KEY_SPACE -> currentCube.y -= 0.05f;
+                    case GLFW_KEY_LEFT_SHIFT -> currentCube.y += 0.05f;
+                    case GLFW_KEY_ENTER -> {
+                        cubes.add(currentCube);
+                        currentCube = new Cube(0,0,-5,0);
+                    }
+                    case GLFW_KEY_R -> rotating = !rotating;
                 }
             }
             if ( key == GLFW_KEY_ESCAPE && action == GLFW_RELEASE )
                 glfwSetWindowShouldClose(window, true);
         });
+
+        currentCube = new Cube(0,0,-5,0);
 
         try ( MemoryStack stack = stackPush() ) {
             IntBuffer pWidth = stack.mallocInt(1); // int*
@@ -93,6 +100,41 @@ public class Main {
         glfwShowWindow(window);
     }
 
+    private void gradentBg(){
+        glMatrixMode(GL_PROJECTION);
+        glPushMatrix();
+        glLoadIdentity();
+        glOrtho(0,1920,0,1080,-1,1);
+
+        glMatrixMode(GL_MODELVIEW);
+        glPushMatrix();
+        glLoadIdentity();
+
+        glEnable(GL_BLEND);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_DST_ALPHA);
+
+        glDepthMask(false);
+
+        glBegin(GL_QUADS);
+
+        glColor3f(0.184f, 0.310f, 0.310f);
+        glVertex2f(0,0);
+        glVertex2f(1920,0);
+
+        glColor3f(0.412f, 0.412f, 0.412f);
+        glVertex2f(1920,1080);
+        glVertex2f(0,1080);
+
+        glEnd();
+
+        glDepthMask(true);
+        glDisable(GL_BLEND);
+        glPopMatrix();
+        glMatrixMode(GL_PROJECTION);
+        glPopMatrix();
+        glMatrixMode(GL_MODELVIEW);
+    }
+
     private void loop() {
         GL.createCapabilities();
 
@@ -109,57 +151,17 @@ public class Main {
 
             glMatrixMode(GL_PROJECTION);
             glLoadMatrixf(matrixBuffer);
-            glMatrixMode(GL_MODELVIEW);
-            glLoadIdentity();
-            glTranslatef(posX, posY, posZ);
-            glRotatef(angle, 0.0f, 1.0f, 0.0f);
-            glScalef(0.33f, 0.33f, 0.33f);
 
-            glBegin(GL_QUADS);
-            //front side
-            glColor3f(1.0f, 1.0f, 1.0f);
-            glVertex3f(-0.5f, -0.5f, 0.5f);
-            glVertex3f(0.5f, -0.5f, 0.5f);
-            glVertex3f(0.5f, 0.5f, 0.5f);
-            glVertex3f(-0.5f, 0.5f, 0.5f);
+            gradentBg();
 
-            //back side
-            glColor3f(1.0f, 1.0f, 0.0f);
-            glVertex3f(-0.5f, -0.5f, -0.5f);
-            glVertex3f(0.5f, -0.5f, -0.5f);
-            glVertex3f(0.5f, 0.5f, -0.5f);
-            glVertex3f(-0.5f, 0.5f, -0.5f);
+            for(Cube cube : cubes){
+                Cube.drawCube(cube);
+            }
 
-            //left side
-            glColor3f(0.0f, 0.502f, 0.0f);
-            glVertex3f(-0.5f, 0.5f, -0.5f);
-            glVertex3f(-0.5f, 0.5f, 0.5f);
-            glVertex3f(-0.5f, -0.5f, 0.5f);
-            glVertex3f(-0.5f, -0.5f, -0.5f);
+            Cube.drawCube(currentCube);
 
-            //right side
-            glColor3f(0.0f, 0.0f, 1.0f);
-            glVertex3f(0.5f, 0.5f, 0.5f);
-            glVertex3f(0.5f, 0.5f, -0.5f);
-            glVertex3f(0.5f, -0.5f, -0.5f);
-            glVertex3f(0.5f, -0.5f, 0.5f);
-
-            //top side
-            glColor3f(1.0f, 0.647f, 0.0f);
-            glVertex3f(0.5f, 0.5f, 0.5f);
-            glVertex3f(-0.5f, 0.5f, 0.5f);
-            glVertex3f(-0.5f, 0.5f, -0.5f);
-            glVertex3f(0.5f, 0.5f, -0.5f);
-
-            //bottom side
-            glColor3f(1.0f, 0.0f, 0.0f);
-            glVertex3f(0.5f, -0.5f, 0.5f);
-            glVertex3f(-0.5f, -0.5f, 0.5f);
-            glVertex3f(-0.5f, -0.5f, -0.5f);
-            glVertex3f(0.5f, -0.5f, -0.5f);
-            glEnd();
-
-            angle += 0.5f;
+            if(rotating)
+                currentCube.angle += 0.5f;
 
             glfwSwapBuffers(window);
 
