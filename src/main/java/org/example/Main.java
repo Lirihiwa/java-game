@@ -17,6 +17,7 @@ public class Main {
 
     // The window handle
     private long window;
+    public float posX = 0.0f, posY = 0.0f;
 
     public void run() {
         System.out.println("Hello LWJGL " + Version.getVersion() + "!");
@@ -47,11 +48,19 @@ public class Main {
         glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE); // the window will stay hidden after creation
         glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE); // the window will be resizable
 
-        window = glfwCreateWindow(300, 300, "Hello World!", NULL, NULL);
+        window = glfwCreateWindow(800, 600, "Game", NULL, NULL);
         if ( window == NULL )
             throw new RuntimeException("Failed to create the GLFW window");
 
         glfwSetKeyCallback(window, (window, key, scancode, action, mods) -> {
+            if(action == GLFW_PRESS || action == GLFW_REPEAT){
+                switch (key) {
+                    case GLFW_KEY_W -> posY += 0.05f;
+                    case GLFW_KEY_S -> posY -= 0.05f;
+                    case GLFW_KEY_D -> posX += 0.05f;
+                    case GLFW_KEY_A -> posX -= 0.05f;
+                }
+            }
             if ( key == GLFW_KEY_ESCAPE && action == GLFW_RELEASE )
                 glfwSetWindowShouldClose(window, true);
         });
@@ -87,7 +96,7 @@ public class Main {
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
             glPushMatrix();
-            glTranslatef(0,0,0);
+            glTranslatef(posX, posY,0);
             glBegin(GL_QUADS);
             glColor3f(1.0f, 0f, 0f);
             glVertex2f(-0.05f, -0.05f);
