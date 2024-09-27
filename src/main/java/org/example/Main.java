@@ -24,7 +24,7 @@ public class Main {
     private List<Cube> cubes = new ArrayList<Cube>();
 
     private Cube currentCube;
-    private boolean rotating = false;
+    private boolean rotating = true;
 
     public void run() {
         System.out.println("Hello LWJGL " + Version.getVersion() + "!");
