@@ -1,5 +1,6 @@
 package org.example;
 
+import org.joml.Matrix4f;
 import org.lwjgl.*;
 import org.lwjgl.glfw.*;
 import org.lwjgl.opengl.*;
@@ -17,7 +18,9 @@ public class Main {
 
     // The window handle
     private long window;
-    public float posX = 0.0f, posY = 0.0f;
+    private float posX = 0.0f, posY = 0.0f, posZ = -5.0f;
+    private float angle = 0.0f;
+
 
     public void run() {
         System.out.println("Hello LWJGL " + Version.getVersion() + "!");
@@ -48,17 +51,20 @@ public class Main {
         glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE); // the window will stay hidden after creation
         glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE); // the window will be resizable
 
-        window = glfwCreateWindow(800, 600, "Game", NULL, NULL);
+        window = glfwCreateWindow(1920, 1080, "Game", NULL, NULL);
         if ( window == NULL )
             throw new RuntimeException("Failed to create the GLFW window");
 
         glfwSetKeyCallback(window, (window, key, scancode, action, mods) -> {
             if(action == GLFW_PRESS || action == GLFW_REPEAT){
                 switch (key) {
-                    case GLFW_KEY_W -> posY += 0.05f;
-                    case GLFW_KEY_S -> posY -= 0.05f;
+                    case GLFW_KEY_W -> posZ += 0.05f;
+                    case GLFW_KEY_S -> posZ -= 0.05f;
                     case GLFW_KEY_D -> posX += 0.05f;
                     case GLFW_KEY_A -> posX -= 0.05f;
+
+                    case GLFW_KEY_SPACE -> posY -= 0.05f;
+                    case GLFW_KEY_LEFT_SHIFT -> posY += 0.05f;
                 }
             }
             if ( key == GLFW_KEY_ESCAPE && action == GLFW_RELEASE )
@@ -90,21 +96,70 @@ public class Main {
     private void loop() {
         GL.createCapabilities();
 
+        glEnable(GL_DEPTH_TEST);
+        Matrix4f matrix = new Matrix4f().perspective((float) Math.toRadians(45.0),
+                1920.0f / 1080.0f, 1.0f, 100.0f);
+        FloatBuffer matrixBuffer = BufferUtils.createFloatBuffer(16);
+        matrix.get(matrixBuffer);
+
         glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
 
         while ( !glfwWindowShouldClose(window) ) {
             glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-            glPushMatrix();
-            glTranslatef(posX, posY,0);
+            glMatrixMode(GL_PROJECTION);
+            glLoadMatrixf(matrixBuffer);
+            glMatrixMode(GL_MODELVIEW);
+            glLoadIdentity();
+            glTranslatef(posX, posY, posZ);
+            glRotatef(angle, 0.0f, 1.0f, 0.0f);
+            glScalef(0.33f, 0.33f, 0.33f);
+
             glBegin(GL_QUADS);
-            glColor3f(1.0f, 0f, 0f);
-            glVertex2f(-0.05f, -0.05f);
-            glVertex2f(0.05f, -0.05f);
-            glVertex2f(0.05f, 0.05f);
-            glVertex2f(-0.05f, 0.05f);
+            //front side
+            glColor3f(1.0f, 1.0f, 1.0f);
+            glVertex3f(-0.5f, -0.5f, 0.5f);
+            glVertex3f(0.5f, -0.5f, 0.5f);
+            glVertex3f(0.5f, 0.5f, 0.5f);
+            glVertex3f(-0.5f, 0.5f, 0.5f);
+
+            //back side
+            glColor3f(1.0f, 1.0f, 0.0f);
+            glVertex3f(-0.5f, -0.5f, -0.5f);
+            glVertex3f(0.5f, -0.5f, -0.5f);
+            glVertex3f(0.5f, 0.5f, -0.5f);
+            glVertex3f(-0.5f, 0.5f, -0.5f);
+
+            //left side
+            glColor3f(0.0f, 0.502f, 0.0f);
+            glVertex3f(-0.5f, 0.5f, -0.5f);
+            glVertex3f(-0.5f, 0.5f, 0.5f);
+            glVertex3f(-0.5f, -0.5f, 0.5f);
+            glVertex3f(-0.5f, -0.5f, -0.5f);
+
+            //right side
+            glColor3f(0.0f, 0.0f, 1.0f);
+            glVertex3f(0.5f, 0.5f, 0.5f);
+            glVertex3f(0.5f, 0.5f, -0.5f);
+            glVertex3f(0.5f, -0.5f, -0.5f);
+            glVertex3f(0.5f, -0.5f, 0.5f);
+
+            //top side
+            glColor3f(1.0f, 0.647f, 0.0f);
+            glVertex3f(0.5f, 0.5f, 0.5f);
+            glVertex3f(-0.5f, 0.5f, 0.5f);
+            glVertex3f(-0.5f, 0.5f, -0.5f);
+            glVertex3f(0.5f, 0.5f, -0.5f);
+
+            //bottom side
+            glColor3f(1.0f, 0.0f, 0.0f);
+            glVertex3f(0.5f, -0.5f, 0.5f);
+            glVertex3f(-0.5f, -0.5f, 0.5f);
+            glVertex3f(-0.5f, -0.5f, -0.5f);
+            glVertex3f(0.5f, -0.5f, -0.5f);
             glEnd();
-            glPopMatrix();
+
+            angle += 0.5f;
 
             glfwSwapBuffers(window);
 
